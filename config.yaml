@@ -1,0 +1,28 @@
+# Proxy Analyzer Configuration
+proxy:
+  listen_host: 127.0.0.1
+  listen_port: 8080
+malware:
+  enable_yara: true  # Set to true if yara-python and rules are available
+  yara_rules_path: ./rules.yar
+  enable_clamav: true
+  whitelist_extensions: []
+  blacklist_extensions: ['.exe', '.zip', '.pdf', '.scr', '.bat', '.dll']
+report:
+  persist_session: true
+  report_file: session_report.json
+alerts:
+  email: false
+  slack: false
+  webhook_url: ''
+feeds:
+  enable_auto_update: false
+  phishing_url_feed: ''
+  malware_hash_feed: ''
+dashboard:
+  enabled: true
+  host: 127.0.0.1
+  port: 5000
+  username: admin
+  password: admin123
+  refresh_interval: 5  # seconds

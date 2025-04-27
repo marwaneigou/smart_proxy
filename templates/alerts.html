@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy Analyzer - Alerts</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background-color: #212529;
+        }
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, .5);
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: rgba(255, 255, 255, .75);
+        }
+        .nav-link.active {
+            color: #fff;
+        }
+        main {
+            padding-top: 48px;
+        }
+        .alert {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">Proxy Analyzer</a>
+        <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-nav">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3" href="{{ url_for('logout') }}">Sign out</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('index') }}">
+                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_logs') }}">
+                                <i class="bi bi-list-ul me-2"></i>Logs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('view_alerts') }}">
+                                <i class="bi bi-exclamation-triangle me-2"></i>Alerts
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_report') }}">
+                                <i class="bi bi-file-earmark-text me-2"></i>Reports
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Security Alerts</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshBtn">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search alerts...">
+                        <button class="btn btn-outline-secondary" type="button" id="searchBtn">Search</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <div id="alerts-container">
+                        {% if alerts %}
+                            {% for alert in alerts %}
+                                <div class="alert alert-{{ 'danger' if alert.level == 'ERROR' else 'warning' }}">
+                                    <strong>{{ alert.timestamp }}</strong>: {{ alert.message }}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">No alerts yet.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Connect to WebSocket
+        const socket = io();
+        
+        // Handle new alerts
+        socket.on('new_alert', function(alert) {
+            const alertsContainer = document.getElementById('alerts-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${alert.level === 'ERROR' ? 'danger' : 'warning'}`;
+            alertDiv.innerHTML = `<strong>${alert.timestamp}</strong>: ${alert.message}`;
+            
+            // Add to the beginning
+            if (alertsContainer.firstChild) {
+                alertsContainer.insertBefore(alertDiv, alertsContainer.firstChild);
+            } else {
+                alertsContainer.appendChild(alertDiv);
+            }
+        });
+        
+        // Refresh button
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            fetch('/api/alerts')
+                .then(response => response.json())
+                .then(data => {
+                    const alertsContainer = document.getElementById('alerts-container');
+                    alertsContainer.innerHTML = '';
+                    
+                    if (data.length > 0) {
+                        data.forEach(alert => {
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = `alert alert-${alert.level === 'ERROR' ? 'danger' : 'warning'}`;
+                            alertDiv.innerHTML = `<strong>${alert.timestamp}</strong>: ${alert.message}`;
+                            alertsContainer.appendChild(alertDiv);
+                        });
+                    } else {
+                        alertsContainer.innerHTML = '<div class="alert alert-info">No alerts yet.</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching alerts:', error);
+                });
+        });
+        
+        // Search functionality
+        document.getElementById('searchBtn').addEventListener('click', function() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const alertDivs = document.querySelectorAll('.alert');
+            
+            alertDivs.forEach(div => {
+                if (div.classList.contains('alert-info')) return; // Skip "No alerts yet" message
+                
+                const text = div.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    div.style.display = 'block';
+                } else {
+                    div.style.display = 'none';
+                }
+            });
+        });
+        
+        // Reset search on input field clear
+        document.getElementById('searchInput').addEventListener('input', function() {
+            if (this.value === '') {
+                const alertDivs = document.querySelectorAll('.alert');
+                alertDivs.forEach(div => {
+                    div.style.display = 'block';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

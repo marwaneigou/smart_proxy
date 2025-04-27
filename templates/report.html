@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy Analyzer - Reports</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background-color: #212529;
+        }
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, .5);
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: rgba(255, 255, 255, .75);
+        }
+        .nav-link.active {
+            color: #fff;
+        }
+        main {
+            padding-top: 48px;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .list-group-item {
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">Proxy Analyzer</a>
+        <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-nav">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3" href="{{ url_for('logout') }}">Sign out</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('index') }}">
+                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_logs') }}">
+                                <i class="bi bi-list-ul me-2"></i>Logs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_alerts') }}">
+                                <i class="bi bi-exclamation-triangle me-2"></i>Alerts
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('view_report') }}">
+                                <i class="bi bi-file-earmark-text me-2"></i>Reports
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Session Report</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshBtn">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="exportBtn">
+                                <i class="bi bi-download"></i> Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <i class="bi bi-bar-chart"></i> Summary
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush" id="summary-list">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Phishing URLs
+                                        <span class="badge bg-primary rounded-pill" id="phishing-count">{{ report.phishing_urls|length if report.phishing_urls else 0 }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Suspicious JS
+                                        <span class="badge bg-primary rounded-pill" id="js-count">{{ report.suspicious_js|length if report.suspicious_js else 0 }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Redirects
+                                        <span class="badge bg-primary rounded-pill" id="redirect-count">{{ report.unexpected_redirects|length if report.unexpected_redirects else 0 }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Malware Found
+                                        <span class="badge bg-danger rounded-pill" id="malware-count">{{ report.malware_found|length if report.malware_found else 0 }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Downloads Scanned
+                                        <span class="badge bg-info rounded-pill" id="downloads-count">{{ report.downloads_scanned if report.downloads_scanned else 0 }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-9">
+                        <ul class="nav nav-tabs" id="reportTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="phishing-tab" data-bs-toggle="tab" data-bs-target="#phishing" type="button" role="tab" aria-controls="phishing" aria-selected="true">Phishing URLs</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="js-tab" data-bs-toggle="tab" data-bs-target="#js" type="button" role="tab" aria-controls="js" aria-selected="false">Suspicious JS</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="redirect-tab" data-bs-toggle="tab" data-bs-target="#redirect" type="button" role="tab" aria-controls="redirect" aria-selected="false">Redirects</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="malware-tab" data-bs-toggle="tab" data-bs-target="#malware" type="button" role="tab" aria-controls="malware" aria-selected="false">Malware</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="reportTabsContent">
+                            <div class="tab-pane fade show active" id="phishing" role="tabpanel" aria-labelledby="phishing-tab">
+                                <div class="p-3">
+                                    <h4>Detected Phishing URLs</h4>
+                                    <div id="phishing-list">
+                                        {% if report.phishing_urls and report.phishing_urls|length > 0 %}
+                                            <ul class="list-group">
+                                                {% for url in report.phishing_urls %}
+                                                    <li class="list-group-item">{{ url }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <div class="alert alert-info">No phishing URLs detected.</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="js" role="tabpanel" aria-labelledby="js-tab">
+                                <div class="p-3">
+                                    <h4>Suspicious JavaScript</h4>
+                                    <div id="js-list">
+                                        {% if report.suspicious_js and report.suspicious_js|length > 0 %}
+                                            <ul class="list-group">
+                                                {% for url in report.suspicious_js %}
+                                                    <li class="list-group-item">{{ url }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <div class="alert alert-info">No suspicious JavaScript detected.</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="redirect" role="tabpanel" aria-labelledby="redirect-tab">
+                                <div class="p-3">
+                                    <h4>Unexpected Redirects</h4>
+                                    <div id="redirect-list">
+                                        {% if report.unexpected_redirects and report.unexpected_redirects|length > 0 %}
+                                            <ul class="list-group">
+                                                {% for redirect in report.unexpected_redirects %}
+                                                    <li class="list-group-item">{{ redirect[0] }} → {{ redirect[1] }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <div class="alert alert-info">No unexpected redirects detected.</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="malware" role="tabpanel" aria-labelledby="malware-tab">
+                                <div class="p-3">
+                                    <h4>Malware Detections</h4>
+                                    <div id="malware-list">
+                                        {% if report.malware_found and report.malware_found|length > 0 %}
+                                            <ul class="list-group">
+                                                {% for malware in report.malware_found %}
+                                                    <li class="list-group-item">
+                                                        <strong>URL:</strong> {{ malware[0] }}<br>
+                                                        <strong>Reason:</strong> {{ malware[1] }}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <div class="alert alert-info">No malware detected.</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Connect to WebSocket
+        const socket = io();
+        
+        // Handle report updates
+        socket.on('report_updated', function(report) {
+            updateReport(report);
+        });
+        
+        // Update report data
+        function updateReport(report) {
+            // Update summary counts
+            document.getElementById('phishing-count').textContent = report.phishing_urls ? report.phishing_urls.length : 0;
+            document.getElementById('js-count').textContent = report.suspicious_js ? report.suspicious_js.length : 0;
+            document.getElementById('redirect-count').textContent = report.unexpected_redirects ? report.unexpected_redirects.length : 0;
+            document.getElementById('malware-count').textContent = report.malware_found ? report.malware_found.length : 0;
+            document.getElementById('downloads-count').textContent = report.downloads_scanned || 0;
+            
+            // Update phishing URLs list
+            const phishingList = document.getElementById('phishing-list');
+            if (report.phishing_urls && report.phishing_urls.length > 0) {
+                let html = '<ul class="list-group">';
+                report.phishing_urls.forEach(url => {
+                    html += `<li class="list-group-item">${url}</li>`;
+                });
+                html += '</ul>';
+                phishingList.innerHTML = html;
+            } else {
+                phishingList.innerHTML = '<div class="alert alert-info">No phishing URLs detected.</div>';
+            }
+            
+            // Update suspicious JS list
+            const jsList = document.getElementById('js-list');
+            if (report.suspicious_js && report.suspicious_js.length > 0) {
+                let html = '<ul class="list-group">';
+                report.suspicious_js.forEach(url => {
+                    html += `<li class="list-group-item">${url}</li>`;
+                });
+                html += '</ul>';
+                jsList.innerHTML = html;
+            } else {
+                jsList.innerHTML = '<div class="alert alert-info">No suspicious JavaScript detected.</div>';
+            }
+            
+            // Update redirects list
+            const redirectList = document.getElementById('redirect-list');
+            if (report.unexpected_redirects && report.unexpected_redirects.length > 0) {
+                let html = '<ul class="list-group">';
+                report.unexpected_redirects.forEach(redirect => {
+                    html += `<li class="list-group-item">${redirect[0]} → ${redirect[1]}</li>`;
+                });
+                html += '</ul>';
+                redirectList.innerHTML = html;
+            } else {
+                redirectList.innerHTML = '<div class="alert alert-info">No unexpected redirects detected.</div>';
+            }
+            
+            // Update malware list
+            const malwareList = document.getElementById('malware-list');
+            if (report.malware_found && report.malware_found.length > 0) {
+                let html = '<ul class="list-group">';
+                report.malware_found.forEach(malware => {
+                    html += `<li class="list-group-item">
+                        <strong>URL:</strong> ${malware[0]}<br>
+                        <strong>Reason:</strong> ${malware[1]}
+                    </li>`;
+                });
+                html += '</ul>';
+                malwareList.innerHTML = html;
+            } else {
+                malwareList.innerHTML = '<div class="alert alert-info">No malware detected.</div>';
+            }
+        }
+        
+        // Refresh button
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            fetch('/api/report')
+                .then(response => response.json())
+                .then(data => {
+                    updateReport(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching report:', error);
+                });
+        });
+        
+        // Export button
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            fetch('/api/report')
+                .then(response => response.json())
+                .then(data => {
+                    // Create a JSON file for download
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+                    const downloadAnchorNode = document.createElement('a');
+                    downloadAnchorNode.setAttribute("href", dataStr);
+                    downloadAnchorNode.setAttribute("download", "proxy_report_" + new Date().toISOString().slice(0, 10) + ".json");
+                    document.body.appendChild(downloadAnchorNode);
+                    downloadAnchorNode.click();
+                    downloadAnchorNode.remove();
+                })
+                .catch(error => {
+                    console.error('Error exporting report:', error);
+                });
+        });
+    </script>
+</body>
+</html>

@@ -1,2 +1,6 @@
 mitmproxy>=10.0.0
 pyclamd>=0.4.0
+PyYAML>=6.0.0
+yara-python>=4.3.0
+Flask>=2.0.0
+Flask-SocketIO>=5.0.0

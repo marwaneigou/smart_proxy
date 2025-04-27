@@ -1,0 +1,107 @@
+{
+  "phishing_urls": [
+    "http://fake-login-page.com/login.php"
+  ],
+  "suspicious_js": [],
+  "unexpected_redirects": [
+    [
+      "http://evilsite.com/steal-creds",
+      "https://evilsite.com/steal-creds"
+    ],
+    [
+      "http://httpbin.org/redirect-to?url=http://evil.com",
+      "http://evil.com"
+    ]
+  ],
+  "malware_found": [
+    [
+      "https://mitm.it/cert/pem",
+      "YARA match: [TestEXE, SuspiciousBase64]"
+    ],
+    [
+      "https://mitm.it/cert/pem",
+      "YARA match: [TestEXE, SuspiciousBase64]"
+    ],
+    [
+      "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      "YARA match: [TestPDF, SuspiciousBase64]"
+    ]
+  ],
+  "downloads_scanned": 4,
+  "suspicious_user_agents": [
+    [
+      "http://fake-login-page.com/login.php",
+      "python-requests/2.32.3"
+    ],
+    [
+      "https://phishtank.org/developer_info.php",
+      "python-requests/2.32.3"
+    ],
+    [
+      "http://malware.testing.google.test/testing/malware/",
+      "python-requests/2.32.3"
+    ],
+    [
+      "http://evilsite.com/steal-creds",
+      "python-requests/2.32.3"
+    ],
+    [
+      "http://www.xss-payloads.com/",
+      "python-requests/2.32.3"
+    ],
+    [
+      "http://malicious-iframe.example.com/",
+      "python-requests/2.32.3"
+    ],
+    [
+      "http://httpbin.org/redirect-to?url=http://evil.com",
+      "python-requests/2.32.3"
+    ],
+    [
+      "https://google.com/goto/http://malicious.site",
+      "python-requests/2.32.3"
+    ],
+    [
+      "http://redirect-test.com/300",
+      "python-requests/2.32.3"
+    ],
+    [
+      "http://legitsite.com/out?url=http://phishing.com",
+      "python-requests/2.32.3"
+    ],
+    [
+      "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      "python-requests/2.32.3"
+    ],
+    [
+      "http://speedtest.ftp.otenet.gr/files/test100k.db",
+      "python-requests/2.32.3"
+    ],
+    [
+      "http://malware.testing.google.test/testing/malware/",
+      "python-requests/2.32.3"
+    ],
+    [
+      "http://evil.com/setup.exe",
+      "python-requests/2.32.3"
+    ],
+    [
+      "https://expired.badssl.com/",
+      "python-requests/2.32.3"
+    ],
+    [
+      "https://self-signed.badssl.com/",
+      "python-requests/2.32.3"
+    ],
+    [
+      "https://untrusted-root.badssl.com/",
+      "python-requests/2.32.3"
+    ],
+    [
+      "https://sha1-intermediate.badssl.com/",
+      "python-requests/2.32.3"
+    ]
+  ],
+  "suspicious_referrers": [],
+  "suspicious_params": []
+}

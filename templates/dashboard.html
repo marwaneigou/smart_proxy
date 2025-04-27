@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy Analyzer - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background-color: #212529;
+        }
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, .5);
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: rgba(255, 255, 255, .75);
+        }
+        .nav-link.active {
+            color: #fff;
+        }
+        main {
+            padding-top: 48px;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffecb5;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            border-color: #f5c2c7;
+        }
+        .alert-info {
+            background-color: #cff4fc;
+            border-color: #b6effb;
+        }
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+        .log-entry.INFO {
+            background-color: #d1e7dd;
+        }
+        .log-entry.WARNING {
+            background-color: #fff3cd;
+        }
+        .log-entry.ERROR {
+            background-color: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">Proxy Analyzer</a>
+        <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-nav">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3" href="{{ url_for('logout') }}">Sign out</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('index') }}">
+                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_logs') }}">
+                                <i class="bi bi-list-ul me-2"></i>Logs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_alerts') }}">
+                                <i class="bi bi-exclamation-triangle me-2"></i>Alerts
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_report') }}">
+                                <i class="bi bi-file-earmark-text me-2"></i>Reports
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Dashboard</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshBtn">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <i class="bi bi-shield-check"></i> Proxy Status
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">Active</h5>
+                                <p class="card-text">
+                                    <strong>Host:</strong> {{ config.proxy.listen_host }}<br>
+                                    <strong>Port:</strong> {{ config.proxy.listen_port }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <i class="bi bi-virus"></i> Malware Scanner
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">Configured</h5>
+                                <p class="card-text">
+                                    <strong>YARA:</strong> {% if config.malware.enable_yara %}Enabled{% else %}Disabled{% endif %}<br>
+                                    <strong>ClamAV:</strong> {% if config.malware.enable_clamav %}Enabled{% else %}Disabled{% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <i class="bi bi-graph-up"></i> Statistics
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">Session</h5>
+                                <p class="card-text" id="stats">
+                                    Loading...
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="mt-4">Recent Alerts</h2>
+                <div class="table-responsive">
+                    <div id="alerts-container">
+                        {% if alerts %}
+                            {% for alert in alerts %}
+                                <div class="alert alert-{{ 'danger' if alert.level == 'ERROR' else 'warning' }}">
+                                    <strong>{{ alert.timestamp }}</strong>: {{ alert.message }}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">No alerts yet.</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h2 class="mt-4">Recent Logs</h2>
+                <div class="table-responsive">
+                    <div id="logs-container">
+                        {% if logs %}
+                            {% for log in logs %}
+                                <div class="log-entry {{ log.level }}">
+                                    <strong>{{ log.timestamp }}</strong> [{{ log.level }}]: {{ log.message }}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">No logs yet.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Connect to WebSocket
+        const socket = io();
+        
+        // Handle new logs
+        socket.on('new_log', function(log) {
+            const logsContainer = document.getElementById('logs-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${log.level}`;
+            logEntry.innerHTML = `<strong>${log.timestamp}</strong> [${log.level}]: ${log.message}`;
+            
+            // Add to the beginning
+            if (logsContainer.firstChild) {
+                logsContainer.insertBefore(logEntry, logsContainer.firstChild);
+            } else {
+                logsContainer.appendChild(logEntry);
+            }
+            
+            // Limit to 50 logs
+            const logs = logsContainer.getElementsByClassName('log-entry');
+            if (logs.length > 50) {
+                logsContainer.removeChild(logs[logs.length - 1]);
+            }
+        });
+        
+        // Handle new alerts
+        socket.on('new_alert', function(alert) {
+            const alertsContainer = document.getElementById('alerts-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${alert.level === 'ERROR' ? 'danger' : 'warning'}`;
+            alertDiv.innerHTML = `<strong>${alert.timestamp}</strong>: ${alert.message}`;
+            
+            // Add to the beginning
+            if (alertsContainer.firstChild) {
+                alertsContainer.insertBefore(alertDiv, alertsContainer.firstChild);
+            } else {
+                alertsContainer.appendChild(alertDiv);
+            }
+            
+            // Limit to 20 alerts
+            const alerts = alertsContainer.getElementsByClassName('alert');
+            if (alerts.length > 20) {
+                alertsContainer.removeChild(alerts[alerts.length - 1]);
+            }
+        });
+        
+        // Handle report updates
+        socket.on('report_updated', function(report) {
+            updateStats(report);
+        });
+        
+        // Update statistics
+        function updateStats(report) {
+            const statsElement = document.getElementById('stats');
+            if (report && Object.keys(report).length > 0) {
+                statsElement.innerHTML = `
+                    <strong>Phishing URLs:</strong> ${report.phishing_urls ? report.phishing_urls.length : 0}<br>
+                    <strong>Suspicious JS:</strong> ${report.suspicious_js ? report.suspicious_js.length : 0}<br>
+                    <strong>Redirects:</strong> ${report.unexpected_redirects ? report.unexpected_redirects.length : 0}<br>
+                    <strong>Malware Found:</strong> ${report.malware_found ? report.malware_found.length : 0}<br>
+                    <strong>Downloads Scanned:</strong> ${report.downloads_scanned || 0}
+                `;
+            } else {
+                statsElement.innerHTML = 'No data available';
+            }
+        }
+        
+        // Refresh button
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            fetch('/api/report')
+                .then(response => response.json())
+                .then(data => {
+                    updateStats(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching report:', error);
+                });
+        });
+        
+        // Initial load of stats
+        fetch('/api/report')
+            .then(response => response.json())
+            .then(data => {
+                updateStats(data);
+            })
+            .catch(error => {
+                console.error('Error fetching report:', error);
+            });
+    </script>
+</body>
+</html>
