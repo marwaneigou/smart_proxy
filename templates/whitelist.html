@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy Analyzer - Whitelist Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background-color: #212529;
+        }
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, .5);
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: rgba(255, 255, 255, .75);
+        }
+        .nav-link.active {
+            color: #fff;
+        }
+        main {
+            padding-top: 48px;
+        }
+        .whitelist-form {
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+        }
+        .domain-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .domain-item:hover {
+            background-color: #f5f5f5;
+        }
+        .flash-message {
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .flash-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .flash-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">Proxy Analyzer</a>
+        <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-nav">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3" href="{{ url_for('logout') }}">Sign out</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('index') }}">
+                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_logs') }}">
+                                <i class="bi bi-list-ul me-2"></i>Logs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_alerts') }}">
+                                <i class="bi bi-exclamation-triangle me-2"></i>Alerts
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('view_report') }}">
+                                <i class="bi bi-file-earmark-text me-2"></i>Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('whitelist') }}">
+                                <i class="bi bi-check-circle me-2"></i>Whitelist
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1><i class="bi bi-check-circle text-success"></i> Whitelist Management</h1>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Whitelisted domains will bypass malware scanning. Use this for trusted domains only.
+                </div>
+
+                {% if success %}
+                <div class="flash-message flash-success">
+                    <i class="fas fa-check-circle"></i> {{ success }}
+                </div>
+                {% endif %}
+
+                {% if error %}
+                <div class="flash-message flash-error">
+                    <i class="fas fa-exclamation-circle"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                <div class="whitelist-form">
+                    <h4>Add Domain to Whitelist</h4>
+                    <form method="POST" action="/whitelist">
+                        <div class="form-group">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="add_domain" placeholder="Enter domain (e.g., example.com or *.example.com)" required>
+                                <div class="input-group-append">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-plus"></i> Add Domain
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">
+                                Use a wildcard (*.example.com) to whitelist all subdomains
+                            </small>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-light">
+                            <h4 class="mb-0">
+                            <i class="bi bi-list"></i> Whitelisted Domains
+                            <span class="badge bg-primary rounded-pill float-end">{{ domains|length }}</span>
+                        </h4>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if domains %}
+                        <ul class="list-group list-group-flush">
+                            {% for domain in domains %}
+                            <li class="domain-item">
+                                <div>
+                                    <i class="bi bi-globe text-primary"></i> 
+                                    <strong>{{ domain }}</strong>
+                                    {% if domain.startswith('*.') %}
+                                    <span class="badge bg-info">Wildcard</span>
+                                    {% endif %}
+                                </div>
+                                <form method="POST" action="/whitelist" style="display: inline;">
+                                    <input type="hidden" name="remove_domain" value="{{ domain }}">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to remove {{ domain }} from the whitelist?')">
+                                        <i class="bi bi-trash"></i> Remove
+                                    </button>
+                                </form>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="alert alert-warning m-3">
+                            <i class="bi bi-exclamation-triangle"></i> No domains in whitelist. Add trusted domains above.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Connect to WebSocket for real-time updates
+            const socket = io();
+            
+            socket.on('connect', function() {
+                console.log('Connected to WebSocket');
+            });
+            
+            socket.on('new_log', function(data) {
+                // You could update UI in real-time here if needed
+                if (data.message.includes('whitelist')) {
+                    // Refresh the page if whitelist was updated
+                    location.reload();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

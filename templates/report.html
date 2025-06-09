@@ -44,6 +44,14 @@
         }
         .list-group-item {
             word-break: break-all;
+            color: black;
+        }
+        .tab-pane, .tab-pane * {
+            color: black !important;
+        }
+        .nav-tabs .nav-link,
+        .nav-tabs .nav-link.active {
+            color: black !important;
         }
     </style>
 </head>
@@ -83,6 +91,11 @@
                         <li class="nav-item">
                             <a class="nav-link active" href="{{ url_for('view_report') }}">
                                 <i class="bi bi-file-earmark-text me-2"></i>Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('whitelist') }}">
+                                <i class="bi bi-check-circle me-2"></i>Whitelist
                             </a>
                         </li>
                     </ul>
@@ -151,6 +164,9 @@
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="malware-tab" data-bs-toggle="tab" data-bs-target="#malware" type="button" role="tab" aria-controls="malware" aria-selected="false">Malware</button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="downloads-tab" data-bs-toggle="tab" data-bs-target="#downloads" type="button" role="tab" aria-controls="downloads" aria-selected="false">Downloads Scanned</button>
+                            </li>
                         </ul>
                         <div class="tab-content" id="reportTabsContent">
                             <div class="tab-pane fade show active" id="phishing" role="tabpanel" aria-labelledby="phishing-tab">
@@ -217,6 +233,23 @@
                                         {% else %}
                                             <div class="alert alert-info">No malware detected.</div>
                                         {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="downloads" role="tabpanel" aria-labelledby="downloads-tab">
+                                <div class="p-3">
+                                    <h4>Downloads Scanned</h4>
+                                    <div id="downloads-info">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Total Downloads Scanned: <span id="downloads-total">{{ report.downloads_scanned if report.downloads_scanned else 0 }}</span></h5>
+                                                <p class="card-text">This shows the number of files that have been scanned by the malware detection system while being downloaded through the proxy.</p>
+                                                <div class="alert alert-info">
+                                                    <i class="bi bi-info-circle"></i> 
+                                                    All downloads are automatically scanned for malicious content. Files that match known malware signatures are blocked for your protection.
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

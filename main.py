@@ -21,6 +21,24 @@ CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.yaml')
 with open(CONFIG_PATH, 'r') as f:
     config = yaml.safe_load(f)
 
+# Load or create whitelist.json
+WHITELIST_PATH = os.path.join(os.path.dirname(__file__), 'whitelist.json')
+def load_whitelist():
+    if os.path.exists(WHITELIST_PATH):
+        try:
+            with open(WHITELIST_PATH, 'r') as f:
+                return set(json.load(f))
+        except Exception as e:
+            print(f"Error loading whitelist: {e}")
+    return set(['google.com', 'microsoft.com', 'apple.com'])  # Default trusted domains
+
+def save_whitelist(whitelist):
+    try:
+        with open(WHITELIST_PATH, 'w') as f:
+            json.dump(list(whitelist), f, indent=2)
+    except Exception as e:
+        print(f"Error saving whitelist: {e}")
+
 # Global report data shared between mitmproxy and dashboard
 shared_report = {'phishing_urls': [], 'suspicious_js': [], 'unexpected_redirects': [], 
                  'malware_found': [], 'downloads_scanned': 0, 'suspicious_user_agents': [],
@@ -32,6 +50,11 @@ class CombinedAddon:
         self.analyzer = TrafficAnalyzer(self.report, config)
         self.scanner = MalwareScanner(self.report, config)
         self.config = config
+        
+        # Load whitelist domains
+        if not hasattr(ctx, 'whitelist'):
+            ctx.whitelist = load_whitelist()
+            print(f"Loaded {len(ctx.whitelist)} domains in whitelist.")
         
         # Start dashboard if enabled
         if DASHBOARD_AVAILABLE and config.get('dashboard', {}).get('enabled', False):

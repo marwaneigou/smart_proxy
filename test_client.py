@@ -107,7 +107,8 @@ class SecurityTester:
             'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
             'http://speedtest.ftp.otenet.gr/files/test100k.db',
             'http://malware.testing.google.test/testing/malware/',  # Will fail
-            'http://evil.com/setup.exe'  # Simulated
+            'http://evil.com/setup.exe',
+            'http://192.168.0.118:8000/eicar.com'  # Simulated
         ]
         
         for url in test_urls:

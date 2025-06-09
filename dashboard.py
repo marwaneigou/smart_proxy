@@ -6,6 +6,7 @@ import yaml
 import time
 import threading
 import datetime
+from mitmproxy import ctx  # For whitelist access
 
 # Load config
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.yaml')
@@ -47,6 +48,57 @@ def index():
                           config=config,
                           logs=logs[-50:],  # Show last 50 logs
                           alerts=alerts[-20:])  # Show last 20 alerts
+                          
+@app.route('/whitelist', methods=['GET', 'POST'])
+def whitelist():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    
+    error = None
+    success = None
+    
+    # Handle POST requests (adding/removing domains)
+    if request.method == 'POST':
+        if 'add_domain' in request.form and request.form['add_domain'].strip():
+            domain = request.form['add_domain'].strip().lower()
+            try:
+                # Import outside to avoid circular imports
+                from main import save_whitelist
+                
+                # Create whitelist if it doesn't exist
+                if not hasattr(ctx, 'whitelist'):
+                    ctx.whitelist = set()
+                
+                # Add domain to whitelist
+                ctx.whitelist.add(domain)
+                save_whitelist(ctx.whitelist)
+                success = f"Added {domain} to whitelist"
+                add_log('INFO', f"Domain {domain} added to whitelist")
+            except Exception as e:
+                error = f"Error adding domain: {str(e)}"
+        
+        elif 'remove_domain' in request.form:
+            domain = request.form['remove_domain']
+            try:
+                # Import outside to avoid circular imports
+                from main import save_whitelist
+                
+                if hasattr(ctx, 'whitelist') and domain in ctx.whitelist:
+                    ctx.whitelist.remove(domain)
+                    save_whitelist(ctx.whitelist)
+                    success = f"Removed {domain} from whitelist"
+                    add_log('INFO', f"Domain {domain} removed from whitelist")
+                else:
+                    error = f"Domain {domain} not found in whitelist"
+            except Exception as e:
+                error = f"Error removing domain: {str(e)}"
+    
+    # Get current whitelist domains
+    domains = []
+    if hasattr(ctx, 'whitelist'):
+        domains = sorted(ctx.whitelist)
+    
+    return render_template('whitelist.html', domains=domains, error=error, success=success)
 
 @app.route('/logs')
 def view_logs():
@@ -84,6 +136,70 @@ def api_logs():
     if not session.get('logged_in'):
         return jsonify({'error': 'Not authenticated'}), 401
     return jsonify(logs[-50:])
+
+@app.route('/api/whitelist')
+def api_whitelist():
+    if not session.get('logged_in'):
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    domains = []
+    if hasattr(ctx, 'whitelist'):
+        domains = sorted(ctx.whitelist)
+    
+    return jsonify(domains)
+
+@app.route('/api/whitelist/add', methods=['POST'])
+def api_whitelist_add():
+    if not session.get('logged_in'):
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        data = request.get_json()
+        if not data or 'domain' not in data:
+            return jsonify({'error': 'Missing domain parameter'}), 400
+        
+        domain = data['domain'].strip().lower()
+        
+        # Import outside to avoid circular imports
+        from main import save_whitelist
+        
+        # Create whitelist if it doesn't exist
+        if not hasattr(ctx, 'whitelist'):
+            ctx.whitelist = set()
+        
+        # Add domain to whitelist
+        ctx.whitelist.add(domain)
+        save_whitelist(ctx.whitelist)
+        add_log('INFO', f"Domain {domain} added to whitelist via API")
+        
+        return jsonify({'success': True, 'domain': domain})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/whitelist/remove', methods=['POST'])
+def api_whitelist_remove():
+    if not session.get('logged_in'):
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        data = request.get_json()
+        if not data or 'domain' not in data:
+            return jsonify({'error': 'Missing domain parameter'}), 400
+        
+        domain = data['domain']
+        
+        # Import outside to avoid circular imports
+        from main import save_whitelist
+        
+        if hasattr(ctx, 'whitelist') and domain in ctx.whitelist:
+            ctx.whitelist.remove(domain)
+            save_whitelist(ctx.whitelist)
+            add_log('INFO', f"Domain {domain} removed from whitelist via API")
+            return jsonify({'success': True, 'domain': domain})
+        else:
+            return jsonify({'error': 'Domain not found in whitelist'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/alerts')
 def api_alerts():
